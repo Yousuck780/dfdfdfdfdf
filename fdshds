@@ -1,0 +1,215 @@
+-- ================================================
+--  GamerLib - Easy Usage Template
+--  Put this script in a LocalScript under StarterPlayerScripts
+--  Put the library ModuleScript somewhere accessible (e.g. same folder)
+-- ================================================
+
+local library = require(script.Parent.Library) -- change path if needed
+
+-- ================================================
+--  CREATE YOUR TABS (sections)
+--  Each section = one clickable tab at the top of the GUI
+-- ================================================
+
+local CombatTab  = library:CreateSection("Combat")
+local PlayerTab  = library:CreateSection("Player")
+local VisualTab  = library:CreateSection("Visuals")
+
+-- ================================================
+--  SHOW THE GUI  (always put this at the very end)
+-- ================================================
+-- library:Ready()   <-- move this line to the BOTTOM of your script
+
+
+-- ================================================
+--  LABEL  -  just displays text, no interaction
+-- ================================================
+
+CombatTab:Label("-- Combat Settings --")
+
+
+-- ================================================
+--  TOGGLE  -  on/off switch
+--  Fires callback with true (on) or false (off)
+--  Read anytime with: library.flags["Toggle Name"]
+-- ================================================
+
+CombatTab:Toggle("Auto Attack", function(enabled)
+    if enabled then
+        print("Auto attack ON")
+        -- start your loop here
+    else
+        print("Auto attack OFF")
+        -- stop your loop here
+    end
+end)
+
+CombatTab:Toggle("Silent Aim", function(enabled)
+    -- enabled = true or false
+end)
+
+
+-- ================================================
+--  BUTTON  -  runs your code once every click
+-- ================================================
+
+CombatTab:Button("Kill All NPCs", function()
+    for _, npc in pairs(workspace:GetDescendants()) do
+        local hum = npc:FindFirstChildOfClass("Humanoid")
+        if hum and npc ~= game.Players.LocalPlayer.Character then
+            hum.Health = 0
+        end
+    end
+end)
+
+
+-- ================================================
+--  SLIDER  -  drag to pick a number
+--  min     = lowest value
+--  max     = highest value
+--  default = starting value (optional)
+--  precise = true allows decimals like 1.5, false = whole numbers only
+--  Read anytime with: library.flags["Slider Name"]
+-- ================================================
+
+PlayerTab:Slider("Walk Speed", {
+    min     = 0,
+    max     = 200,
+    default = 16,
+    precise = false
+}, function(value)
+    game.Players.LocalPlayer.Character.Humanoid.WalkSpeed = value
+end)
+
+PlayerTab:Slider("Jump Height", {
+    min     = 0,
+    max     = 500,
+    default = 50,
+    precise = false
+}, function(value)
+    game.Players.LocalPlayer.Character.Humanoid.JumpHeight = value
+end)
+
+PlayerTab:Slider("FOV", {
+    min     = 10,
+    max     = 120,
+    default = 70,
+    precise = false
+}, function(value)
+    game.Workspace.CurrentCamera.FieldOfView = value
+end)
+
+
+-- ================================================
+--  BOX  -  type in a value, press Enter to confirm
+--  Callback fires when player presses Enter
+--  Read anytime with: library.flags["Box Name"]
+-- ================================================
+
+PlayerTab:Box("Teleport to Player", function(text)
+    -- text = whatever the user typed
+    local target = game.Players:FindFirstChild(text)
+    if target and target.Character then
+        game.Players.LocalPlayer.Character.HumanoidRootPart.CFrame =
+            target.Character.HumanoidRootPart.CFrame + Vector3.new(0, 3, 0)
+    else
+        print("Player not found: " .. text)
+    end
+end)
+
+
+-- ================================================
+--  BIND  -  assign a hotkey that triggers a function
+--  defaultKey = starting key (or nil for none)
+--  The callback fires every time that key is pressed in-game
+--  Read current bound key with: library.flags["Bind Name"]
+-- ================================================
+
+PlayerTab:Bind("Toggle Fly", Enum.KeyCode.F, function()
+    print("Fly key pressed!")
+    -- put your fly toggle logic here
+end)
+
+PlayerTab:Bind("Noclip Key", Enum.KeyCode.N, function()
+    print("Noclip toggled")
+end)
+
+PlayerTab:Bind("Teleport Mouse Button", Enum.UserInputType.MouseButton2, function()
+    print("Right click teleport fired")
+end)
+
+
+-- ================================================
+--  DROPDOWN  -  pick one option from a list
+--  Fires callback with the chosen option as a string
+-- ================================================
+
+VisualTab:Dropdown("ESP Mode", {
+    "Disabled",
+    "Box ESP",
+    "Name ESP",
+    "Box + Name"
+}, function(choice)
+    if choice == "Disabled" then
+        print("ESP off")
+    elseif choice == "Box ESP" then
+        print("Box ESP on")
+    elseif choice == "Name ESP" then
+        print("Name ESP on")
+    elseif choice == "Box + Name" then
+        print("Box + Name on")
+    end
+end)
+
+VisualTab:Dropdown("Team", {
+    "Red Team",
+    "Blue Team",
+    "Spectator"
+}, function(choice)
+    print("Joined: " .. choice)
+end)
+
+
+-- ================================================
+--  COLOR PICKER  -  pick a Color3 with a palette
+--  defaultColor = starting color (or nil for purple)
+--  Has a built-in Rainbow toggle button
+--  Fires callback with the chosen Color3 every time it changes
+-- ================================================
+
+VisualTab:ColorPicker("ESP Color", Color3.fromRGB(255, 0, 0), function(color)
+    -- color = a Color3 value
+    -- use it to update highlights, boxes, etc.
+    print("Color changed:", color)
+end)
+
+VisualTab:ColorPicker("Chams Color", Color3.fromRGB(0, 255, 0), function(color)
+    -- update your chams here
+end)
+
+
+-- ================================================
+--  HOW TO READ ANY VALUE FROM ANYWHERE IN YOUR SCRIPT
+-- ================================================
+
+-- After the GUI is set up you can check values like this:
+--
+--   library.flags["Auto Attack"]   -- true or false
+--   library.flags["Walk Speed"]    -- the current number
+--   library.flags["Teleport to Player"]  -- the typed string
+--   library.flags["Toggle Fly"]    -- the bound KeyCode
+--
+-- Example inside a loop:
+--
+-- game:GetService("RunService").Heartbeat:Connect(function()
+--     if library.flags["Auto Attack"] then
+--         -- do auto attack stuff every frame
+--     end
+-- end)
+
+
+-- ================================================
+--  SHOW THE GUI  -  always keep this at the very bottom
+-- ================================================
+
+library:Ready()
