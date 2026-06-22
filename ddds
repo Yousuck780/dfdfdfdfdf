@@ -46,7 +46,7 @@ library.theme = {
 
 if library.theme.cursor and Drawing then
     -- Force mouse icon to be enabled
-    uis.MouseIconEnabled = true
+    uis.MouseIconEnabled = false
     
     local success = pcall(function() 
         library.cursor = Drawing.new("Image")
