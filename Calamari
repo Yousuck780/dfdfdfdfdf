@@ -1,0 +1,226 @@
+local isfile = isfile or function(file)
+    local suc, res = pcall(function()
+        return readfile(file)
+    end)
+    return suc and res ~= nil and res ~= ''
+end
+
+local delfile = delfile or function(file)
+    writefile(file, '')
+end
+
+local function downloadFile(path, func)
+    if not isfile(path) then
+        local suc, res = pcall(function()
+            return game:HttpGet('https://raw.githubusercontent.com/7GrandDadPGN/VapeCompiled/'..readfile('newvape/profiles/commit.txt')..'/'..select(1, path:gsub('newvape/', '')), true)
+        end)
+        if not suc or res == '404: Not Found' then
+            error(res)
+        end
+        if path:find('.lua') then
+            res = '--This watermark is used to delete the file if its cached, remove it to make the file persist after vape updates.\n'..res
+        end
+        writefile(path, res)
+    end
+    return (func or readfile)(path)
+end
+
+local function wipeFolder(path)
+    if not isfolder(path) then return end
+    for _, file in listfiles(path) do
+        if file:find('loader') then continue end
+        if isfile(file) and select(1, readfile(file):find('--This watermark is used to delete the file if its cached, remove it to make the file persist after vape updates.')) == 1 then
+            delfile(file)
+        end
+    end
+end
+
+for _, folder in {'newvape', 'newvape/games', 'newvape/profiles', 'newvape/assets', 'newvape/libraries', 'newvape/guis'} do
+    if not isfolder(folder) then
+        makefolder(folder)
+    end
+end
+
+if not shared.VapeDeveloper then
+    local _, subbed = pcall(function()
+        return game:HttpGet('https://github.com/7GrandDadPGN/VapeCompiled')
+    end)
+    local commit = subbed:find('currentOid')
+    commit = commit and subbed:sub(commit + 13, commit + 52) or nil
+    commit = commit and #commit == 40 and commit or 'main'
+    if commit == 'main' or (isfile('newvape/profiles/commit.txt') and readfile('newvape/profiles/commit.txt') or '') ~= commit then
+        wipeFolder('newvape')
+        wipeFolder('newvape/games')
+        wipeFolder('newvape/guis')
+        wipeFolder('newvape/libraries')
+    end
+    writefile('newvape/profiles/commit.txt', commit)
+end
+
+-- Create intro GUI
+local TweenService = game:GetService("TweenService")
+local Players = game:GetService("Players")
+local player = Players.LocalPlayer
+
+local introGui = Instance.new("ScreenGui")
+introGui.Name = "CalamariIntro"
+introGui.IgnoreGuiInset = true
+introGui.ResetOnSpawn = false
+introGui.Parent = player:WaitForChild("PlayerGui")
+
+-- Background
+local background = Instance.new("Frame")
+background.Size = UDim2.fromScale(1,1)
+background.BackgroundColor3 = Color3.fromRGB(10,10,10)
+background.BorderSizePixel = 0
+background.Parent = introGui
+
+-- Center Logo
+local logo = Instance.new("ImageLabel")
+logo.AnchorPoint = Vector2.new(.5,.5)
+logo.Position = UDim2.fromScale(.5,.42)
+logo.Size = UDim2.fromOffset(220,220)
+logo.BackgroundTransparency = 1
+logo.Image = "rbxassetid://97989822066085"
+logo.ImageTransparency = 1
+logo.Parent = background
+
+-- Title
+local title = Instance.new("TextLabel")
+title.AnchorPoint = Vector2.new(.5,.5)
+title.Position = UDim2.fromScale(.5,.67)
+title.Size = UDim2.fromOffset(500,50)
+title.BackgroundTransparency = 1
+title.Text = "Calamari BETA"
+title.TextScaled = true
+title.Font = Enum.Font.GothamBlack
+title.TextColor3 = Color3.fromRGB(255,40,40)
+title.TextTransparency = 1
+title.Parent = background
+
+-- Loading Text
+local loading = Instance.new("TextLabel")
+loading.AnchorPoint = Vector2.new(.5,.5)
+loading.Position = UDim2.fromScale(.5,.82)
+loading.Size = UDim2.fromOffset(300,30)
+loading.BackgroundTransparency = 1
+loading.Text = "Loading Vape..."
+loading.Font = Enum.Font.GothamBold
+loading.TextScaled = true
+loading.TextColor3 = Color3.fromRGB(255,255,255)
+loading.Parent = background
+
+-- Loading Bar Background
+local barBack = Instance.new("Frame")
+barBack.AnchorPoint = Vector2.new(.5,.5)
+barBack.Position = UDim2.fromScale(.5,.88)
+barBack.Size = UDim2.fromOffset(420,18)
+barBack.BackgroundColor3 = Color3.fromRGB(35,35,35)
+barBack.BorderSizePixel = 0
+barBack.Parent = background
+
+local corner = Instance.new("UICorner")
+corner.CornerRadius = UDim.new(1,0)
+corner.Parent = barBack
+
+-- Loading Fill
+local fill = Instance.new("Frame")
+fill.Size = UDim2.new(0,0,1,0)
+fill.BackgroundColor3 = Color3.fromRGB(255,0,0)
+fill.BorderSizePixel = 0
+fill.Parent = barBack
+
+local fillCorner = Instance.new("UICorner")
+fillCorner.CornerRadius = UDim.new(1,0)
+fillCorner.Parent = fill
+
+-- Fade In
+TweenService:Create(logo,TweenInfo.new(0.8),{
+    ImageTransparency = 0
+}):Play()
+
+TweenService:Create(title,TweenInfo.new(0.8),{
+    TextTransparency = 0
+}):Play()
+
+-- Fill Animation
+local tween = TweenService:Create(
+    fill,
+    TweenInfo.new(4,Enum.EasingStyle.Quad,Enum.EasingDirection.Out),
+    {Size = UDim2.new(1,0,1,0)}
+)
+
+tween:Play()
+
+-- Load Vape script
+local vapeLoaded = false
+local function loadVape()
+    if vapeLoaded then return end
+    vapeLoaded = true
+    local success, result = pcall(function()
+        loadstring(downloadFile('newvape/main.lua'), 'main')()
+    end)
+    
+    if not success then
+        warn("Failed to load Vape: " .. tostring(result))
+        -- Retry after 2 seconds
+        task.wait(2)
+        loadVape()
+    else
+        -- Fade Out intro
+        tween.Completed:Wait()
+        loading.Text = "Loaded!"
+        task.wait(0.8)
+
+        for _,obj in ipairs(background:GetDescendants()) do
+            if obj:IsA("TextLabel") then
+                TweenService:Create(obj,TweenInfo.new(.6),{
+                    TextTransparency = 1
+                }):Play()
+            elseif obj:IsA("ImageLabel") then
+                TweenService:Create(obj,TweenInfo.new(.6),{
+                    ImageTransparency = 1
+                }):Play()
+            elseif obj:IsA("Frame") and obj ~= background then
+                TweenService:Create(obj,TweenInfo.new(.6),{
+                    BackgroundTransparency = 1
+                }):Play()
+            end
+        end
+
+        TweenService:Create(background,TweenInfo.new(.6),{
+            BackgroundTransparency = 1
+        }):Play()
+
+        task.wait(.7)
+        introGui:Destroy()
+
+        -- Create permanent watermark GUI
+        local watermarkGui = Instance.new("ScreenGui")
+        watermarkGui.Name = "CalamariWatermark"
+        watermarkGui.IgnoreGuiInset = true
+        watermarkGui.ResetOnSpawn = false
+        watermarkGui.Parent = player:WaitForChild("PlayerGui")
+
+        local watermarkFrame = Instance.new("Frame")
+        watermarkFrame.Parent = watermarkGui
+        watermarkFrame.AnchorPoint = Vector2.new(1,0)
+        watermarkFrame.Position = UDim2.new(1,-15,0,15)
+        watermarkFrame.Size = UDim2.fromOffset(180,50)
+        watermarkFrame.BackgroundTransparency = 1
+        watermarkFrame.ZIndex = 100
+
+        local wmLogo = Instance.new("ImageLabel")
+        wmLogo.Parent = watermarkFrame
+        wmLogo.Size = UDim2.fromOffset(40,40)
+        wmLogo.Position = UDim2.fromOffset(0,5)
+        wmLogo.BackgroundTransparency = 1
+        wmLogo.Image = "rbxassetid://97989822066085"
+        wmLogo.ZIndex = 101
+
+        local wmText = Instance.new("TextLabel")
+        wmText.Parent = watermarkFrame
+        wmText.Position = UDim2.fromOffset(48,0)
+        wmText.Size = UDim2.new(1,-48,1,0)
+        wmText.BackgroundTransparency = 1
+        wmText.Text = "Calam
