@@ -1,18 +1,71 @@
+-- Vape Loader with Intro and Persistent Watermark
+local TweenService = game:GetService("TweenService")
+local Players = game:GetService("Players")
+local player = Players.LocalPlayer
+
+-- ===== VAPE LOADER (from NewMainScript.lua) =====
 local isfile = isfile or function(file)
 	local suc, res = pcall(function()
 		return readfile(file)
 	end)
 	return suc and res ~= nil and res ~= ''
 end
+
 local delfile = delfile or function(file)
 	writefile(file, '')
-end  
+end
 
-local TweenService = game:GetService("TweenService")
-local Players = game:GetService("Players")
-local player = Players.LocalPlayer
+local function downloadFile(path, func)
+	if not isfile(path) then
+		local suc, res = pcall(function()
+			return game:HttpGet('https://raw.githubusercontent.com/7GrandDadPGN/VapeCompiled/'..readfile('newvape/profiles/commit.txt')..'/'..select(1, path:gsub('newvape/', '')), true)
+		end)
+		if not suc or res == '404: Not Found' then
+			error(res)
+		end
+		if path:find('.lua') then
+			res = '--This watermark is used to delete the file if its cached, remove it to make the file persist after vape updates.\n'..res
+		end
+		writefile(path, res)
+	end
+	return (func or readfile)(path)
+end
 
--- Create permanent watermark GUI
+local function wipeFolder(path)
+	if not isfolder(path) then return end
+	for _, file in listfiles(path) do
+		if file:find('loader') then continue end
+		if isfile(file) and select(1, readfile(file):find('--This watermark is used to delete the file if its cached, remove it to make the file persist after vape updates.')) == 1 then
+			delfile(file)
+		end
+	end
+end
+
+-- Create Vape folders
+for _, folder in {'newvape', 'newvape/games', 'newvape/profiles', 'newvape/assets', 'newvape/libraries', 'newvape/guis'} do
+	if not isfolder(folder) then
+		makefolder(folder)
+	end
+end
+
+-- Vape initialization
+if not shared.VapeDeveloper then
+	local _, subbed = pcall(function()
+		return game:HttpGet('https://github.com/7GrandDadPGN/VapeCompiled')
+	end)
+	local commit = subbed:find('currentOid')
+	commit = commit and subbed:sub(commit + 13, commit + 52) or nil
+	commit = commit and #commit == 40 and commit or 'main'
+	if commit == 'main' or (isfile('newvape/profiles/commit.txt') and readfile('newvape/profiles/commit.txt') or '') ~= commit then
+		wipeFolder('newvape')
+		wipeFolder('newvape/games')
+		wipeFolder('newvape/guis')
+		wipeFolder('newvape/libraries')
+	end
+	writefile('newvape/profiles/commit.txt', commit)
+end
+
+-- ===== PERMANENT WATERMARK =====
 local watermarkGui = Instance.new("ScreenGui")
 watermarkGui.Name = "CalamariWatermark"
 watermarkGui.IgnoreGuiInset = true
@@ -47,7 +100,7 @@ wmText.TextColor3 = Color3.fromRGB(255,0,0)
 wmText.TextXAlignment = Enum.TextXAlignment.Left
 wmText.ZIndex = 101
 
--- Create intro GUI
+-- ===== INTRO GUI =====
 local introGui = Instance.new("ScreenGui")
 introGui.Name = "CalamariIntro"
 introGui.IgnoreGuiInset = true
@@ -120,9 +173,6 @@ local fillCorner = Instance.new("UICorner")
 fillCorner.CornerRadius = UDim.new(1,0)
 fillCorner.Parent = fill
 
--- Flag to track if intro is done
-local introComplete = false
-
 -- Fade In
 TweenService:Create(logo,TweenInfo.new(0.8),{
 	ImageTransparency = 0
@@ -146,7 +196,7 @@ loading.Text = "Loaded!"
 
 task.wait(0.8)
 
--- Fade Out intro
+-- Fade Out (only intro elements)
 for _,obj in ipairs(background:GetDescendants()) do
 	if obj:IsA("TextLabel") then
 		TweenService:Create(obj,TweenInfo.new(.6),{
@@ -169,60 +219,10 @@ TweenService:Create(background,TweenInfo.new(.6),{
 
 task.wait(.7)
 introGui:Destroy()
-introComplete = true
 
--- Load Vape script (with persistence across game sessions)
+-- ===== LOAD VAPE =====
 local function loadVape()
     local success, result = pcall(function()
-        -- Download and setup Vape files
-        local function downloadFile(path, func)
-            if not isfile(path) then
-                local suc, res = pcall(function()
-                    return game:HttpGet('https://raw.githubusercontent.com/7GrandDadPGN/VapeCompiled/'..readfile('newvape/profiles/commit.txt')..'/'..select(1, path:gsub('newvape/', '')), true)
-                end)
-                if not suc or res == '404: Not Found' then
-                    error(res)
-                end
-                if path:find('.lua') then
-                    res = '--This watermark is used to delete the file if its cached, remove it to make the file persist after vape updates.\n'..res
-                end
-                writefile(path, res)
-            end
-            return (func or readfile)(path)
-        end
-
-        local function wipeFolder(path)
-            if not isfolder(path) then return end
-            for _, file in listfiles(path) do
-                if file:find('loader') then continue end
-                if isfile(file) and select(1, readfile(file):find('--This watermark is used to delete the file if its cached, remove it to make the file persist after vape updates.')) == 1 then
-                    delfile(file)
-                end
-            end
-        end
-
-        for _, folder in {'newvape', 'newvape/games', 'newvape/profiles', 'newvape/assets', 'newvape/libraries', 'newvape/guis'} do
-            if not isfolder(folder) then
-                makefolder(folder)
-            end
-        end
-
-        if not shared.VapeDeveloper then
-            local _, subbed = pcall(function()
-                return game:HttpGet('https://github.com/7GrandDadPGN/VapeCompiled')
-            end)
-            local commit = subbed:find('currentOid')
-            commit = commit and subbed:sub(commit + 13, commit + 52) or nil
-            commit = commit and #commit == 40 and commit or 'main'
-            if commit == 'main' or (isfile('newvape/profiles/commit.txt') and readfile('newvape/profiles/commit.txt') or '') ~= commit then
-                wipeFolder('newvape')
-                wipeFolder('newvape/games')
-                wipeFolder('newvape/guis')
-                wipeFolder('newvape/libraries')
-            end
-            writefile('newvape/profiles/commit.txt', commit)
-        end
-
         return loadstring(downloadFile('newvape/main.lua'), 'main')()
     end)
     
@@ -234,7 +234,7 @@ local function loadVape()
     end
 end
 
--- Handle game changes (TeleportService, game joins)
+-- ===== PERSISTENCE ACROSS GAME SESSIONS =====
 local function setupPersistence()
     -- Re-initialize when player respawns or game changes
     local function onCharacterAdded()
@@ -263,13 +263,7 @@ local function setupPersistence()
     end
 end
 
--- Wait for intro to complete before loading Vape
-task.wait(function()
-    while not introComplete do
-        task.wait()
-    end
-end)
-
+-- ===== START =====
 -- Initial Vape load
 loadVape()
 
