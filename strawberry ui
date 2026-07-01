@@ -1,0 +1,569 @@
+--[[
+    Strawberry Milk UI Library  |  V1.0
+    Made by Kosovo and Deepseek AI
+
+    HOW TO USE (like installing any exploit UI lib):
+        local Library = loadstring(YOUR_SOURCE_HERE)()  -- or just paste this whole file into a LocalScript
+
+        local Window = Library:CreateWindow({
+            Title    = "Strawberry Milk",
+            SubTitle = "V1.0",
+            LogoId   = "7197472488",
+        })
+
+        local Main = Window:CreateTab("Main")
+        Main:CreateToggle({ Text = "My Toggle", Default = false, Callback = function(state) end })
+        Main:CreateTextbox({ Placeholder = "Type here...", Callback = function(text) end })
+        Main:CreateButton({ Text = "Click Me", Callback = function() end })
+
+        local Credits = Window:CreateTab("Credits")
+        Credits:CreateLabel("Made by Kosovo and Deepseek AI")
+
+    That's the whole API. Scroll to the bottom of this file for a full working example
+    that builds the exact Main/Credits layout you asked for.
+--]]
+
+local TweenService = game:GetService("TweenService")
+local UserInputService = game:GetService("UserInputService")
+local Players = game:GetService("Players")
+
+local player = Players.LocalPlayer
+local playerGui = player:WaitForChild("PlayerGui")
+
+-- ============================================================
+-- THEME
+-- ============================================================
+local Theme = {
+    Background = Color3.fromRGB(255, 244, 247),
+    Panel      = Color3.fromRGB(255, 232, 238),
+    Card       = Color3.fromRGB(255, 255, 255),
+    Accent     = Color3.fromRGB(255, 122, 165),
+    AccentDark = Color3.fromRGB(219, 82, 128),
+    Text       = Color3.fromRGB(70, 35, 48),
+    SubText    = Color3.fromRGB(150, 105, 120),
+    ToggleOff  = Color3.fromRGB(226, 200, 210),
+    Stroke     = Color3.fromRGB(255, 200, 215),
+}
+
+local function corner(inst, radius)
+    local c = Instance.new("UICorner")
+    c.CornerRadius = UDim.new(0, radius or 10)
+    c.Parent = inst
+    return c
+end
+
+local function stroke(inst, color, thickness, transparency)
+    local s = Instance.new("UIStroke")
+    s.Color = color or Theme.Stroke
+    s.Thickness = thickness or 1
+    s.Transparency = transparency or 0.4
+    s.Parent = inst
+    return s
+end
+
+local function tween(inst, props, time)
+    TweenService:Create(inst, TweenInfo.new(time or 0.15, Enum.EasingStyle.Quad), props):Play()
+end
+
+-- ============================================================
+-- LIBRARY
+-- ============================================================
+local Library = {}
+Library.__index = Library
+
+local Window = {}
+Window.__index = Window
+
+local Tab = {}
+Tab.__index = Tab
+
+function Library:CreateWindow(config)
+    config = config or {}
+    local title = config.Title or "Window"
+    local subTitle = config.SubTitle or ""
+    local logoId = config.LogoId or ""
+    local size = config.Size or UDim2.new(0, 500, 0, 360)
+
+    local old = playerGui:FindFirstChild("StrawberryMilkV1")
+    if old then old:Destroy() end
+
+    -- // ROOT
+    local ScreenGui = Instance.new("ScreenGui")
+    ScreenGui.Name = "StrawberryMilkV1"
+    ScreenGui.ResetOnSpawn = false
+    ScreenGui.ZIndexBehavior = Enum.ZIndexBehavior.Sibling
+    ScreenGui.Parent = playerGui
+
+    -- // MAIN FRAME
+    local Main = Instance.new("Frame")
+    Main.Name = "Main"
+    Main.Size = size
+    Main.Position = UDim2.new(0.5, -size.X.Offset / 2, 0.5, -size.Y.Offset / 2)
+    Main.BackgroundColor3 = Theme.Background
+    Main.BorderSizePixel = 0
+    Main.ClipsDescendants = true
+    Main.Parent = ScreenGui
+    corner(Main, 14)
+    stroke(Main, Theme.Accent, 1.5, 0.5)
+
+    local Shadow = Instance.new("ImageLabel")
+    Shadow.BackgroundTransparency = 1
+    Shadow.Image = "rbxassetid://1316045217"
+    Shadow.ImageColor3 = Color3.new(0, 0, 0)
+    Shadow.ImageTransparency = 0.6
+    Shadow.ScaleType = Enum.ScaleType.Slice
+    Shadow.SliceCenter = Rect.new(10, 10, 118, 118)
+    Shadow.Size = UDim2.new(1, 46, 1, 46)
+    Shadow.Position = UDim2.new(0, -23, 0, -23)
+    Shadow.ZIndex = 0
+    Shadow.Parent = Main
+
+    -- // TOP BAR
+    local TopBar = Instance.new("Frame")
+    TopBar.Size = UDim2.new(1, 0, 0, 52)
+    TopBar.BackgroundColor3 = Theme.Accent
+    TopBar.BorderSizePixel = 0
+    TopBar.Parent = Main
+    corner(TopBar, 14)
+
+    local TopBarMask = Instance.new("Frame")
+    TopBarMask.BackgroundColor3 = Theme.Accent
+    TopBarMask.BorderSizePixel = 0
+    TopBarMask.Size = UDim2.new(1, 0, 0, 16)
+    TopBarMask.Position = UDim2.new(0, 0, 1, -16)
+    TopBarMask.Parent = TopBar
+
+    local TopGradient = Instance.new("UIGradient")
+    TopGradient.Color = ColorSequence.new({
+        ColorSequenceKeypoint.new(0, Theme.Accent),
+        ColorSequenceKeypoint.new(1, Theme.AccentDark),
+    })
+    TopGradient.Rotation = 90
+    TopGradient.Parent = TopBar
+
+    local LogoFrame = Instance.new("Frame")
+    LogoFrame.BackgroundColor3 = Color3.new(1, 1, 1)
+    LogoFrame.Size = UDim2.new(0, 34, 0, 34)
+    LogoFrame.Position = UDim2.new(0, 10, 0.5, -17)
+    LogoFrame.Parent = TopBar
+    corner(LogoFrame, 17)
+
+    local Logo = Instance.new("ImageLabel")
+    Logo.BackgroundTransparency = 1
+    Logo.Image = "rbxassetid://" .. tostring(logoId)
+    Logo.Size = UDim2.new(1, -4, 1, -4)
+    Logo.Position = UDim2.new(0, 2, 0, 2)
+    Logo.Parent = LogoFrame
+    corner(Logo, 17)
+
+    local TitleLabel = Instance.new("TextLabel")
+    TitleLabel.BackgroundTransparency = 1
+    TitleLabel.Size = UDim2.new(0, 260, 0, 20)
+    TitleLabel.Position = UDim2.new(0, 54, 0, 7)
+    TitleLabel.Font = Enum.Font.GothamBold
+    TitleLabel.Text = title
+    TitleLabel.TextColor3 = Color3.new(1, 1, 1)
+    TitleLabel.TextSize = 16
+    TitleLabel.TextXAlignment = Enum.TextXAlignment.Left
+    TitleLabel.Parent = TopBar
+
+    local SubLabel = Instance.new("TextLabel")
+    SubLabel.BackgroundTransparency = 1
+    SubLabel.Size = UDim2.new(0, 260, 0, 16)
+    SubLabel.Position = UDim2.new(0, 54, 0, 26)
+    SubLabel.Font = Enum.Font.Gotham
+    SubLabel.Text = subTitle
+    SubLabel.TextColor3 = Color3.fromRGB(255, 235, 240)
+    SubLabel.TextTransparency = 0.15
+    SubLabel.TextSize = 12
+    SubLabel.TextXAlignment = Enum.TextXAlignment.Left
+    SubLabel.Parent = TopBar
+
+    -- // CLOSE BUTTON (built from vector shapes, not a font glyph)
+    local CloseBtn = Instance.new("TextButton")
+    CloseBtn.Text = ""
+    CloseBtn.BackgroundColor3 = Color3.new(1, 1, 1)
+    CloseBtn.BackgroundTransparency = 0.85
+    CloseBtn.AutoButtonColor = false
+    CloseBtn.Size = UDim2.new(0, 30, 0, 30)
+    CloseBtn.Position = UDim2.new(1, -41, 0, 11)
+    CloseBtn.Parent = TopBar
+    corner(CloseBtn, 8)
+
+    local function makeXLine(rotation)
+        local line = Instance.new("Frame")
+        line.AnchorPoint = Vector2.new(0.5, 0.5)
+        line.Position = UDim2.new(0.5, 0, 0.5, 0)
+        line.Size = UDim2.new(0, 14, 0, 2)
+        line.BackgroundColor3 = Color3.new(1, 1, 1)
+        line.BorderSizePixel = 0
+        line.Rotation = rotation
+        line.Parent = CloseBtn
+        corner(line, 1)
+        return line
+    end
+    makeXLine(45)
+    makeXLine(-45)
+
+    CloseBtn.MouseEnter:Connect(function()
+        tween(CloseBtn, {BackgroundTransparency = 0.6}, 0.12)
+    end)
+    CloseBtn.MouseLeave:Connect(function()
+        tween(CloseBtn, {BackgroundTransparency = 0.85}, 0.12)
+    end)
+    CloseBtn.MouseButton1Click:Connect(function()
+        tween(Main, {Size = UDim2.new(size.X.Scale, 0, size.Y.Scale, 0)}, 0.2)
+        task.wait(0.2)
+        ScreenGui.Enabled = false
+    end)
+
+    -- // DRAG
+    do
+        local dragging, dragInput, dragStart, startPos
+        TopBar.InputBegan:Connect(function(input)
+            if input.UserInputType == Enum.UserInputType.MouseButton1 or input.UserInputType == Enum.UserInputType.Touch then
+                dragging = true
+                dragStart = input.Position
+                startPos = Main.Position
+                input.Changed:Connect(function()
+                    if input.UserInputState == Enum.UserInputState.End then
+                        dragging = false
+                    end
+                end)
+            end
+        end)
+        TopBar.InputChanged:Connect(function(input)
+            if input.UserInputType == Enum.UserInputType.MouseMovement or input.UserInputType == Enum.UserInputType.Touch then
+                dragInput = input
+            end
+        end)
+        UserInputService.InputChanged:Connect(function(input)
+            if input == dragInput and dragging then
+                local delta = input.Position - dragStart
+                Main.Position = UDim2.new(
+                    startPos.X.Scale, startPos.X.Offset + delta.X,
+                    startPos.Y.Scale, startPos.Y.Offset + delta.Y
+                )
+            end
+        end)
+    end
+
+    -- // SIDEBAR
+    local Sidebar = Instance.new("Frame")
+    Sidebar.Size = UDim2.new(0, 130, 1, -52)
+    Sidebar.Position = UDim2.new(0, 0, 0, 52)
+    Sidebar.BackgroundColor3 = Theme.Panel
+    Sidebar.BorderSizePixel = 0
+    Sidebar.Parent = Main
+
+    local SidebarList = Instance.new("UIListLayout")
+    SidebarList.Padding = UDim.new(0, 6)
+    SidebarList.SortOrder = Enum.SortOrder.LayoutOrder
+    SidebarList.Parent = Sidebar
+
+    local SidebarPad = Instance.new("UIPadding")
+    SidebarPad.PaddingTop = UDim.new(0, 14)
+    SidebarPad.PaddingLeft = UDim.new(0, 10)
+    SidebarPad.PaddingRight = UDim.new(0, 10)
+    SidebarPad.Parent = Sidebar
+
+    -- // CONTENT
+    local Content = Instance.new("Frame")
+    Content.Size = UDim2.new(1, -130, 1, -52)
+    Content.Position = UDim2.new(0, 130, 0, 52)
+    Content.BackgroundTransparency = 1
+    Content.Parent = Main
+
+    -- // fade/scale in on load
+    Main.Size = UDim2.new(size.X.Scale, 0, size.Y.Scale, 0)
+    tween(Main, {Size = size}, 0.25)
+
+    local self = setmetatable({}, Window)
+    self.ScreenGui = ScreenGui
+    self.Main = Main
+    self.Sidebar = Sidebar
+    self.Content = Content
+    self.Pages = {}
+    self.TabButtons = {}
+    self.TabOrder = 0
+    self.SelectedTab = nil
+    return self
+end
+
+function Window:_selectTab(name)
+    for pageName, page in pairs(self.Pages) do
+        page.Visible = (pageName == name)
+    end
+    for btnName, data in pairs(self.TabButtons) do
+        local active = (btnName == name)
+        tween(data.Button, {
+            BackgroundColor3 = active and Theme.Card or Theme.Panel,
+        }, 0.12)
+        tween(data.Label, {
+            TextColor3 = active and Theme.AccentDark or Theme.SubText,
+        }, 0.12)
+        tween(data.Indicator, {
+            BackgroundTransparency = active and 0 or 1,
+        }, 0.12)
+    end
+    self.SelectedTab = name
+end
+
+function Window:CreateTab(name)
+    self.TabOrder += 1
+
+    local Btn = Instance.new("TextButton")
+    Btn.Name = name .. "Tab"
+    Btn.Size = UDim2.new(1, 0, 0, 38)
+    Btn.LayoutOrder = self.TabOrder
+    Btn.BackgroundColor3 = Theme.Panel
+    Btn.AutoButtonColor = false
+    Btn.Text = ""
+    Btn.Parent = self.Sidebar
+    corner(Btn, 8)
+
+    local Indicator = Instance.new("Frame")
+    Indicator.Size = UDim2.new(0, 3, 0, 18)
+    Indicator.Position = UDim2.new(0, 4, 0.5, -9)
+    Indicator.BackgroundColor3 = Theme.Accent
+    Indicator.BackgroundTransparency = 1
+    Indicator.BorderSizePixel = 0
+    Indicator.Parent = Btn
+    corner(Indicator, 2)
+
+    local Label = Instance.new("TextLabel")
+    Label.BackgroundTransparency = 1
+    Label.Size = UDim2.new(1, -20, 1, 0)
+    Label.Position = UDim2.new(0, 16, 0, 0)
+    Label.Font = Enum.Font.GothamBold
+    Label.Text = name
+    Label.TextSize = 14
+    Label.TextColor3 = Theme.SubText
+    Label.TextXAlignment = Enum.TextXAlignment.Left
+    Label.Parent = Btn
+
+    local Page = Instance.new("ScrollingFrame")
+    Page.Name = name .. "Page"
+    Page.Size = UDim2.new(1, -24, 1, -20)
+    Page.Position = UDim2.new(0, 12, 0, 10)
+    Page.BackgroundTransparency = 1
+    Page.BorderSizePixel = 0
+    Page.ScrollBarThickness = 4
+    Page.ScrollBarImageColor3 = Theme.Accent
+    Page.CanvasSize = UDim2.new(0, 0, 0, 0)
+    Page.AutomaticCanvasSize = Enum.AutomaticSize.Y
+    Page.Visible = false
+    Page.Parent = self.Content
+
+    local Layout = Instance.new("UIListLayout")
+    Layout.Padding = UDim.new(0, 10)
+    Layout.SortOrder = Enum.SortOrder.LayoutOrder
+    Layout.Parent = Page
+
+    self.Pages[name] = Page
+    self.TabButtons[name] = {Button = Btn, Label = Label, Indicator = Indicator}
+
+    Btn.MouseButton1Click:Connect(function()
+        self:_selectTab(name)
+    end)
+    Btn.MouseEnter:Connect(function()
+        if self.SelectedTab ~= name then
+            tween(Btn, {BackgroundColor3 = Color3.fromRGB(255, 240, 245)}, 0.12)
+        end
+    end)
+    Btn.MouseLeave:Connect(function()
+        if self.SelectedTab ~= name then
+            tween(Btn, {BackgroundColor3 = Theme.Panel}, 0.12)
+        end
+    end)
+
+    if not self.SelectedTab then
+        self:_selectTab(name)
+    end
+
+    local tabObj = setmetatable({}, Tab)
+    tabObj.Page = Page
+    tabObj.Order = 0
+    return tabObj
+end
+
+function Tab:_nextOrder()
+    self.Order += 1
+    return self.Order
+end
+
+function Tab:CreateLabel(text)
+    local Label = Instance.new("TextLabel")
+    Label.BackgroundTransparency = 1
+    Label.Size = UDim2.new(1, 0, 0, 20)
+    Label.LayoutOrder = self:_nextOrder()
+    Label.Font = Enum.Font.GothamBold
+    Label.Text = text
+    Label.TextColor3 = Theme.AccentDark
+    Label.TextSize = 13
+    Label.TextXAlignment = Enum.TextXAlignment.Left
+    Label.TextWrapped = true
+    Label.Parent = self.Page
+    return Label
+end
+
+function Tab:CreateToggle(config)
+    config = config or {}
+    local text = config.Text or "Toggle"
+    local state = config.Default or false
+    local callback = config.Callback
+
+    local Holder = Instance.new("Frame")
+    Holder.Size = UDim2.new(1, 0, 0, 38)
+    Holder.BackgroundColor3 = Theme.Card
+    Holder.LayoutOrder = self:_nextOrder()
+    Holder.Parent = self.Page
+    corner(Holder, 8)
+    stroke(Holder, Theme.Stroke, 1, 0.6)
+
+    local Label = Instance.new("TextLabel")
+    Label.BackgroundTransparency = 1
+    Label.Size = UDim2.new(1, -62, 1, 0)
+    Label.Position = UDim2.new(0, 12, 0, 0)
+    Label.Font = Enum.Font.Gotham
+    Label.Text = text
+    Label.TextColor3 = Theme.Text
+    Label.TextSize = 13
+    Label.TextXAlignment = Enum.TextXAlignment.Left
+    Label.Parent = Holder
+
+    local Switch = Instance.new("Frame")
+    Switch.Size = UDim2.new(0, 40, 0, 20)
+    Switch.Position = UDim2.new(1, -52, 0.5, -10)
+    Switch.BackgroundColor3 = state and Theme.Accent or Theme.ToggleOff
+    Switch.Parent = Holder
+    corner(Switch, 10)
+
+    local Knob = Instance.new("Frame")
+    Knob.Size = UDim2.new(0, 16, 0, 16)
+    Knob.Position = state and UDim2.new(1, -18, 0.5, -8) or UDim2.new(0, 2, 0.5, -8)
+    Knob.BackgroundColor3 = Color3.new(1, 1, 1)
+    Knob.Parent = Switch
+    corner(Knob, 8)
+
+    local ClickCatcher = Instance.new("TextButton")
+    ClickCatcher.BackgroundTransparency = 1
+    ClickCatcher.Size = UDim2.new(1, 0, 1, 0)
+    ClickCatcher.Text = ""
+    ClickCatcher.Parent = Holder
+
+    ClickCatcher.MouseButton1Click:Connect(function()
+        state = not state
+        tween(Switch, {BackgroundColor3 = state and Theme.Accent or Theme.ToggleOff}, 0.12)
+        tween(Knob, {Position = state and UDim2.new(1, -18, 0.5, -8) or UDim2.new(0, 2, 0.5, -8)}, 0.12)
+        if callback then callback(state) end
+    end)
+
+    return {
+        Set = function(_, newState)
+            state = newState
+            tween(Switch, {BackgroundColor3 = state and Theme.Accent or Theme.ToggleOff}, 0.12)
+            tween(Knob, {Position = state and UDim2.new(1, -18, 0.5, -8) or UDim2.new(0, 2, 0.5, -8)}, 0.12)
+        end,
+        Get = function() return state end,
+    }
+end
+
+function Tab:CreateTextbox(config)
+    config = config or {}
+    local placeholder = config.Placeholder or "Enter text..."
+    local callback = config.Callback
+
+    local Holder = Instance.new("Frame")
+    Holder.Size = UDim2.new(1, 0, 0, 38)
+    Holder.BackgroundColor3 = Theme.Card
+    Holder.LayoutOrder = self:_nextOrder()
+    Holder.Parent = self.Page
+    corner(Holder, 8)
+    stroke(Holder, Theme.Stroke, 1, 0.6)
+
+    local Box = Instance.new("TextBox")
+    Box.BackgroundTransparency = 1
+    Box.Size = UDim2.new(1, -20, 1, 0)
+    Box.Position = UDim2.new(0, 10, 0, 0)
+    Box.Font = Enum.Font.Gotham
+    Box.PlaceholderText = placeholder
+    Box.Text = config.Default or ""
+    Box.TextColor3 = Theme.Text
+    Box.PlaceholderColor3 = Theme.SubText
+    Box.TextSize = 13
+    Box.TextXAlignment = Enum.TextXAlignment.Left
+    Box.ClearTextOnFocus = false
+    Box.Parent = Holder
+
+    Box.FocusLost:Connect(function(enterPressed)
+        if callback then callback(Box.Text, enterPressed) end
+    end)
+
+    return Box
+end
+
+function Tab:CreateButton(config)
+    config = config or {}
+    local text = config.Text or "Button"
+    local callback = config.Callback
+
+    local Btn = Instance.new("TextButton")
+    Btn.Size = UDim2.new(1, 0, 0, 38)
+    Btn.BackgroundColor3 = Theme.Accent
+    Btn.AutoButtonColor = false
+    Btn.LayoutOrder = self:_nextOrder()
+    Btn.Font = Enum.Font.GothamBold
+    Btn.Text = text
+    Btn.TextColor3 = Color3.new(1, 1, 1)
+    Btn.TextSize = 13
+    Btn.Parent = self.Page
+    corner(Btn, 8)
+
+    Btn.MouseEnter:Connect(function()
+        tween(Btn, {BackgroundColor3 = Theme.AccentDark}, 0.12)
+    end)
+    Btn.MouseLeave:Connect(function()
+        tween(Btn, {BackgroundColor3 = Theme.Accent}, 0.12)
+    end)
+    Btn.MouseButton1Click:Connect(function()
+        if callback then callback() end
+    end)
+
+    return Btn
+end
+
+-- ============================================================
+-- EXAMPLE USAGE — builds your Main / Credits layout
+-- Delete everything below this line if you just want the bare library.
+-- ============================================================
+
+local Window = Library:CreateWindow({
+    Title    = "Strawberry Milk",
+    SubTitle = "V1.0",
+    LogoId   = "7197472488",
+})
+
+local MainTab = Window:CreateTab("Main")
+
+MainTab:CreateLabel("Toggles")
+MainTab:CreateToggle({ Text = "Toggle One",   Default = false, Callback = function(s) print("Toggle One:", s) end })
+MainTab:CreateToggle({ Text = "Toggle Two",   Default = false, Callback = function(s) print("Toggle Two:", s) end })
+MainTab:CreateToggle({ Text = "Toggle Three", Default = false, Callback = function(s) print("Toggle Three:", s) end })
+
+MainTab:CreateLabel("Inputs")
+MainTab:CreateTextbox({ Placeholder = "Enter text here...", Callback = function(t) print("Textbox One:", t) end })
+MainTab:CreateTextbox({ Placeholder = "Enter more text...", Callback = function(t) print("Textbox Two:", t) end })
+
+MainTab:CreateLabel("Actions")
+MainTab:CreateButton({ Text = "Button One",   Callback = function() print("Button One clicked") end })
+MainTab:CreateButton({ Text = "Button Two",   Callback = function() print("Button Two clicked") end })
+MainTab:CreateButton({ Text = "Button Three", Callback = function() print("Button Three clicked") end })
+
+local CreditsTab = Window:CreateTab("Credits")
+CreditsTab:CreateLabel("Strawberry Milk V1.0")
+CreditsTab:CreateLabel("Made by Kosovo and Deepseek AI cus im lazy as shit")
+
+print("Strawberry Milk V1.0 (UI Lib) loaded.")
+
+return Library
